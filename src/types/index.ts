@@ -36,3 +36,27 @@ export interface Announcement {
   created_at: string
   is_important: boolean
 }
+
+export interface Unit {
+  id: string
+  code: string
+  name: string
+  short_name?: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface AdditionalWork {
+  id: string
+  materials: string
+  quantity_pd: number
+  quantity_recount: number
+  unit_id: string
+  unit?: Unit
+  project_id?: string
+  created_by?: string
+  status: 'draft' | 'approved' | 'rejected'
+  created_at: string
+  updated_at: string
+}

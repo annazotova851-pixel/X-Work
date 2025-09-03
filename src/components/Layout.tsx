@@ -1,11 +1,28 @@
 import type { ReactNode } from 'react'
-import { User, Building2, Calendar, Users, Settings, LogOut } from 'lucide-react'
+import { Link, useLocation } from 'react-router-dom'
+import { User, Building2, Calendar, Users, Settings, LogOut, Briefcase, BookOpen } from 'lucide-react'
 
 interface LayoutProps {
   children: ReactNode
 }
 
 export default function Layout({ children }: LayoutProps) {
+  const location = useLocation()
+
+  const isActive = (path: string) => {
+    if (path === '/' && location.pathname === '/') return true
+    if (path !== '/' && location.pathname.startsWith(path)) return true
+    return false
+  }
+
+  const getLinkClasses = (path: string) => {
+    const baseClasses = "flex items-center px-4 py-2 rounded-lg transition-colors"
+    const activeClasses = "bg-blue-100 text-blue-700"
+    const inactiveClasses = "text-gray-700 hover:bg-gray-100"
+    
+    return `${baseClasses} ${isActive(path) ? activeClasses : inactiveClasses}`
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <aside className="w-64 bg-white shadow-sm border-r border-gray-200">
@@ -16,31 +33,43 @@ export default function Layout({ children }: LayoutProps) {
         <nav className="px-4 pb-6">
           <ul className="space-y-2">
             <li>
-              <a href="/dashboard" className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+              <Link to="/" className={getLinkClasses('/')}>
                 <Building2 className="w-5 h-5 mr-3" />
-                Главная
-              </a>
+                Дашборд
+              </Link>
             </li>
             <li>
-              <a href="/employees" className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+              <Link to="/additional-works" className={getLinkClasses('/additional-works')}>
+                <Briefcase className="w-5 h-5 mr-3" />
+                Доп.работы
+              </Link>
+            </li>
+            <li>
+              <Link to="/references" className={getLinkClasses('/references')}>
+                <BookOpen className="w-5 h-5 mr-3" />
+                Справочники
+              </Link>
+            </li>
+            <li>
+              <a href="/employees" className={getLinkClasses('/employees')}>
                 <Users className="w-5 h-5 mr-3" />
                 Сотрудники
               </a>
             </li>
             <li>
-              <a href="/calendar" className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+              <a href="/calendar" className={getLinkClasses('/calendar')}>
                 <Calendar className="w-5 h-5 mr-3" />
                 Календарь
               </a>
             </li>
             <li>
-              <a href="/profile" className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+              <a href="/profile" className={getLinkClasses('/profile')}>
                 <User className="w-5 h-5 mr-3" />
                 Профиль
               </a>
             </li>
             <li>
-              <a href="/settings" className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+              <a href="/settings" className={getLinkClasses('/settings')}>
                 <Settings className="w-5 h-5 mr-3" />
                 Настройки
               </a>

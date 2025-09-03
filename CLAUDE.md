@@ -31,13 +31,13 @@ npx tsc --noEmit     # Type checking only (standalone)
 ## Architecture Overview
 
 ### Tech Stack
-- **Frontend**: React 18, TypeScript 5 (strict mode), Vite 7.0
-- **UI Framework**: Tailwind CSS 3.4+ with component-based design
+- **Frontend**: React 19, TypeScript 5 (strict mode), Vite 7.1
+- **UI Framework**: Tailwind CSS 4.1+ with component-based design
 - **State Management**: TanStack Query 5+ (server state), React Context (auth state)
-- **Backend**: Supabase 2.47+ (PostgreSQL, Auth, Storage, Edge Functions, Realtime WebSocket)
+- **Backend**: Supabase 2.57+ (PostgreSQL, Auth, Storage, Edge Functions, Realtime WebSocket)
 - **Authentication**: Supabase Auth with OAuth 2.0 and MFA support
 - **Icons**: Lucide React for consistent iconography
-- **Routing**: React Router DOM 6.27
+- **Routing**: React Router DOM 7.8
 - **Development**: ESLint, Prettier, dotenv for environment management
 - **Editor**: WebStorm
 
