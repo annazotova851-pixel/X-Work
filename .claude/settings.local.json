@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm create:*)",
+      "Bash(npx create-vite:*)",
+      "Bash(mkdir:*)",
+      "Read(C:\\Users\\Aня\\WebstormProjects/**)",
+      "Bash(mv:*)",
+      "Bash(rmdir:*)",
+      "Bash(npm install)",
+      "Bash(npm install:*)",
+      "Bash(npx tailwindcss init:*)",
+      "Bash(./node_modules/.bin/tailwindcss:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm uninstall:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
