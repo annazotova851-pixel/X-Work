@@ -60,3 +60,17 @@ export interface AdditionalWork {
   created_at: string
   updated_at: string
 }
+
+export interface Project {
+  id: string
+  name: string
+  code: string
+  description?: string
+  status: 'active' | 'completed' | 'cancelled'
+  start_date?: string
+  end_date?: string
+  manager_id?: string
+  photo_url?: string
+  created_at: string
+  updated_at: string
+}

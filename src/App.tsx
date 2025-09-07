@@ -1,20 +1,21 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout'
-import Dashboard from './pages/Dashboard'
-import AdditionalWorks from './pages/AdditionalWorks'
-import References from './pages/References'
+import Projects from './pages/Projects'
+import ProjectDetail from './pages/ProjectDetail'
+import { ProjectsProvider } from './contexts/ProjectsContext'
 
 function App() {
   return (
-    <Router>
-      <Layout>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/additional-works" element={<AdditionalWorks />} />
-          <Route path="/references" element={<References />} />
-        </Routes>
-      </Layout>
-    </Router>
+    <ProjectsProvider>
+      <Router>
+        <Layout>
+          <Routes>
+            <Route path="/" element={<Projects />} />
+            <Route path="/projects/:id" element={<ProjectDetail />} />
+          </Routes>
+        </Layout>
+      </Router>
+    </ProjectsProvider>
   )
 }
 

@@ -16,7 +16,18 @@
       "Bash(git add:*)",
       "Bash(git push:*)",
       "Bash(npm run lint)",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "Read(/C:\\Users\\Aня\\WebstormProjects\\X-Work/**)",
+      "Read(/C:\\Users\\Aня\\WebstormProjects\\X-Work/**)",
+      "Read(/C:\\Users\\Aня\\WebstormProjects\\X-Work/**)",
+      "Read(/C:\\Users\\Aня\\WebstormProjects\\X-Work/**)",
+      "Read(/C:\\Users\\Aня\\WebstormProjects\\X-Work/**)",
+      "Read(/C:\\Users\\Aня\\WebstormProjects\\X-Work\\src/**)",
+      "Read(/C:\\Users\\Aня\\WebstormProjects\\X-Work\\src/**)",
+      "Read(/C:\\Users\\Aня\\WebstormProjects\\X-Work\\src/**)",
+      "Read(/C:\\Users\\Aня\\WebstormProjects\\X-Work\\src/**)",
+      "Bash(npm start)",
+      "Bash(pkill:*)"
     ],
     "deny": [],
     "ask": []

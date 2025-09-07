@@ -17,28 +17,24 @@ npm run preview      # Preview production build
 # Build & Quality
 npm run build        # TypeScript check + Vite build (MUST pass before commit)
 npm run lint         # ESLint check (MUST pass before commit)
-npm run format       # Prettier formatting
-npm run format:check # Check formatting without changes
 npx tsc --noEmit     # Type checking only (standalone)
 ```
 
 ## Pre-commit Checklist
 1. Run `npm run lint` and fix all warnings
-2. Run `npm run format` to ensure consistent formatting
-3. Run `npm run build` and ensure project builds successfully
-4. Follow Conventional Commits format (`feat:`, `fix:`, `chore:`, etc.)
+2. Run `npm run build` and ensure project builds successfully
+3. Follow Conventional Commits format (`feat:`, `fix:`, `chore:`, etc.)
 
 ## Architecture Overview
 
 ### Tech Stack
 - **Frontend**: React 19, TypeScript 5 (strict mode), Vite 7.1
 - **UI Framework**: Tailwind CSS 4.1+ with component-based design
-- **State Management**: TanStack Query 5+ (server state), React Context (auth state)
 - **Backend**: Supabase 2.57+ (PostgreSQL, Auth, Storage, Edge Functions, Realtime WebSocket)
-- **Authentication**: Supabase Auth with OAuth 2.0 and MFA support
+- **Authentication**: Supabase Auth
 - **Icons**: Lucide React for consistent iconography
 - **Routing**: React Router DOM 7.8
-- **Development**: ESLint, Prettier, dotenv for environment management
+- **Development**: ESLint, dotenv for environment management
 - **Editor**: WebStorm
 
 ### Project Structure
@@ -54,11 +50,8 @@ src/
 ```
 
 ### Key Patterns
-- **Imports**: Use path aliases configured in `vite.config.ts` and `tsconfig.json`:
-  - `@/` → `./src`
-  - Absolute imports for better maintainability
-- **State**: TanStack Query for server state, React Context for auth state
-- **API Files**: Named as `entity-api.ts` or similar in appropriate directories
+- **Imports**: Use relative imports for project files
+- **State**: React Context for auth state (see `hooks/useAuth.ts`)
 - **Error Handling**: All Supabase queries must include error handling
 
 ## Database Integration
@@ -100,19 +93,15 @@ if (error) {
 
 ### MUST DO
 - Run `npm run lint` before committing
-- Run `npm run format` for consistent code style
 - Handle all TypeScript strict mode requirements
-- Use absolute imports with path aliases (@/)
 - Include error handling in all Supabase queries
 - Write **TypeScript only** with strict typing
 - Use functional React components and hooks
-- Data fetching via TanStack Query
 - All tables MUST have sorting and filters in column headers
 
 ### NEVER DO
 - Create files unless absolutely necessary
 - Add comments unless explicitly requested
-- Use relative imports (../../../)
 - Commit .env files or secrets
 - Use `any` type in TypeScript
 - Create documentation files proactively
@@ -164,9 +153,8 @@ if (error) {
 - Handle loading and error states consistently
 
 ### State Management
-- Use TanStack Query for all server state
-- Use React Context sparingly for truly global state
-- Prefer local state for component-specific data
+- Use React Context sparingly for truly global state (auth is implemented)
+- Prefer local state for component-specific data  
 - Implement proper error handling and loading states
 
 ## Important Notes
