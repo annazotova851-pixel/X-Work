@@ -1,20 +1,170 @@
 import type { ReactNode } from 'react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { FolderOpen, ChevronDown, ChevronRight, Plus, Edit2, Check, X } from 'lucide-react'
+import { Layout as AntLayout, Menu, Button, Input, Modal, App } from 'antd'
+import { 
+  FolderOutlined, 
+  HomeOutlined, 
+  PlusOutlined,
+  EditOutlined,
+  SaveOutlined,
+  CloseOutlined,
+  BookOutlined,
+  DeleteOutlined
+} from '@ant-design/icons'
 import { useProjects } from '../contexts/ProjectsContext'
+import type { MenuProps } from 'antd'
+
+const { Sider, Content, Header } = AntLayout
 
 interface LayoutProps {
   children: ReactNode
 }
 
+interface ReferenceType {
+  key: string
+  title: string
+  description: string
+}
+
 export default function Layout({ children }: LayoutProps) {
-  const [isProjectsOpen, setIsProjectsOpen] = useState(false)
+  const { message, modal } = App.useApp()
+  const [collapsed, setCollapsed] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editedName, setEditedName] = useState('')
-  const [isAddingNew, setIsAddingNew] = useState(false)
+  const [isModalVisible, setIsModalVisible] = useState(false)
   const [newProject, setNewProject] = useState({ name: '' })
   const { projects, loading: projectsLoading, updateProject, addProject } = useProjects()
+
+  // Принудительное обновление справочников при монтировании
+  useEffect(() => {
+    const defaultReferences = [
+      { key: 'units', title: 'Единицы измерения', description: 'Справочник единиц измерения для материалов и работ' },
+      { key: 'materials', title: 'Материалы', description: 'Справочник строительных материалов' },
+      { key: 'workers', title: 'Сотрудники', description: 'Справочник сотрудников и исполнителей' },
+      { key: 'categories', title: 'Категории работ', description: 'Справочник категорий строительных работ' },
+      { key: 'suppliers', title: 'Поставщики', description: 'Справочник поставщиков материалов и услуг' },
+      { key: 'tags', title: 'Тэг', description: 'Справочник тэгов рабочей документации' },
+      { key: 'calculation_types', title: 'Тип расчета', description: 'Справочник типов расчетов для проектной документации' },
+      { key: 'documents', title: 'Документы', description: 'Справочник документов проекта' },
+      { key: 'statuses', title: 'Статус', description: 'Справочник статусов выполнения работ' },
+      { key: 'stages', title: 'Этапы', description: 'Справочник этапов проекта' },
+      { key: 'initiators', title: 'Инициатор', description: 'Справочник инициаторов задач и проектов' }
+    ]
+    
+    // Загружаем список удаленных справочников
+    const deletedReferences = JSON.parse(localStorage.getItem('deletedReferences') || '[]')
+    const deletedKeys = new Set(deletedReferences)
+    
+    const saved = localStorage.getItem('referenceTypes')
+    if (saved) {
+      try {
+        const savedReferences = JSON.parse(saved)
+        const savedKeys = new Set(savedReferences.map((ref: ReferenceType) => ref.key))
+        
+        // Проверяем, есть ли новые справочники (исключая удаленные)
+        const availableDefaultReferences = defaultReferences.filter(ref => !deletedKeys.has(ref.key))
+        const hasNewReferences = availableDefaultReferences.some(ref => !savedKeys.has(ref.key))
+        
+        if (hasNewReferences) {
+          // Перезагружаем список с новыми справочниками
+          const savedMap = new Map(savedReferences.map((ref: ReferenceType) => [ref.key, ref]))
+          
+          const updatedReferences = availableDefaultReferences.map(defaultRef => {
+            const existing = savedMap.get(defaultRef.key)
+            return existing ? { ...defaultRef, title: existing.title } : defaultRef
+          })
+          
+          // Добавляем дополнительные справочники (исключая удаленные)
+          const defaultKeys = new Set(defaultReferences.map(ref => ref.key))
+          const additionalReferences = savedReferences.filter((ref: ReferenceType) => 
+            !defaultKeys.has(ref.key) && !deletedKeys.has(ref.key)
+          )
+          const finalReferences = [...updatedReferences, ...additionalReferences]
+          
+          setReferenceTypes(finalReferences)
+          localStorage.setItem('referenceTypes', JSON.stringify(finalReferences))
+        }
+      } catch (error) {
+        console.error('Ошибка обновления справочников:', error)
+        const availableDefaultReferences = defaultReferences.filter(ref => !deletedKeys.has(ref.key))
+        setReferenceTypes(availableDefaultReferences)
+        localStorage.setItem('referenceTypes', JSON.stringify(availableDefaultReferences))
+      }
+    }
+  }, [])
+
+  // Состояние для справочников
+  const [editingRefId, setEditingRefId] = useState<string | null>(null)
+  const [editedRefName, setEditedRefName] = useState('')
+  const [isRefModalVisible, setIsRefModalVisible] = useState(false)
+  const [newReference, setNewReference] = useState({ title: '', description: '' })
+  
+  // Загружаем справочники из localStorage
+  const [referenceTypes, setReferenceTypes] = useState<ReferenceType[]>(() => {
+    const defaultReferences = [
+      { key: 'units', title: 'Единицы измерения', description: 'Справочник единиц измерения для материалов и работ' },
+      { key: 'materials', title: 'Материалы', description: 'Справочник строительных материалов' },
+      { key: 'workers', title: 'Сотрудники', description: 'Справочник сотрудников и исполнителей' },
+      { key: 'categories', title: 'Категории работ', description: 'Справочник категорий строительных работ' },
+      { key: 'suppliers', title: 'Поставщики', description: 'Справочник поставщиков материалов и услуг' },
+      { key: 'tags', title: 'Тэг', description: 'Справочник тэгов рабочей документации' },
+      { key: 'calculation_types', title: 'Тип расчета', description: 'Справочник типов расчетов для проектной документации' },
+      { key: 'documents', title: 'Документы', description: 'Справочник документов проекта' },
+      { key: 'statuses', title: 'Статус', description: 'Справочник статусов выполнения работ' },
+      { key: 'stages', title: 'Этапы', description: 'Справочник этапов проекта' },
+      { key: 'initiators', title: 'Инициатор', description: 'Справочник инициаторов задач и проектов' }
+    ]
+
+    // Загружаем список удаленных справочников
+    const deletedReferences = JSON.parse(localStorage.getItem('deletedReferences') || '[]')
+    const deletedKeys = new Set(deletedReferences)
+
+    const saved = localStorage.getItem('referenceTypes')
+    let finalReferences = defaultReferences.filter(ref => !deletedKeys.has(ref.key))
+
+    if (saved) {
+      try {
+        const savedReferences = JSON.parse(saved)
+        
+        // Создаем карту существующих справочников
+        const savedMap = new Map(savedReferences.map((ref: ReferenceType) => [ref.key, ref]))
+        
+        // Обновляем/добавляем справочники из defaultReferences (исключая удаленные)
+        finalReferences = defaultReferences
+          .filter(ref => !deletedKeys.has(ref.key))
+          .map(defaultRef => {
+            const existing = savedMap.get(defaultRef.key)
+            // Если справочник существует, сохраняем пользовательское название, но обновляем описание
+            return existing ? { ...defaultRef, title: existing.title } : defaultRef
+          })
+        
+        // Добавляем любые дополнительные справочники, которых нет в defaultReferences и которые не удалены
+        const defaultKeys = new Set(defaultReferences.map(ref => ref.key))
+        const additionalReferences = savedReferences.filter((ref: ReferenceType) => 
+          !defaultKeys.has(ref.key) && !deletedKeys.has(ref.key)
+        )
+        finalReferences = [...finalReferences, ...additionalReferences]
+        
+      } catch (error) {
+        console.error('Ошибка загрузки справочников:', error)
+        finalReferences = defaultReferences.filter(ref => !deletedKeys.has(ref.key))
+      }
+    }
+    
+    // Всегда обновляем localStorage с актуальным списком
+    localStorage.setItem('referenceTypes', JSON.stringify(finalReferences))
+    return finalReferences
+  })
+
+  // Сохраняем справочники в localStorage
+  const saveReferencesToStorage = (refs: ReferenceType[]) => {
+    try {
+      localStorage.setItem('referenceTypes', JSON.stringify(refs))
+    } catch (error) {
+      console.error('Ошибка сохранения справочников:', error)
+    }
+  }
 
   const handleEditStart = (project: any) => {
     setEditingId(project.id)
@@ -27,8 +177,9 @@ export default function Layout({ children }: LayoutProps) {
         await updateProject(editingId, { name: editedName.trim() })
         setEditingId(null)
         setEditedName('')
+        message.success('Проект обновлен')
       } catch (error) {
-        console.error('Error updating project:', error)
+        message.error('Ошибка при обновлении проекта')
       }
     }
   }
@@ -41,7 +192,6 @@ export default function Layout({ children }: LayoutProps) {
   const handleAddNew = async () => {
     if (newProject.name.trim()) {
       try {
-        // Автоматически генерируем код из названия
         const code = newProject.name.trim()
           .toUpperCase()
           .replace(/\s+/g, '-')
@@ -53,160 +203,327 @@ export default function Layout({ children }: LayoutProps) {
           code: code || 'PROJECT-' + Date.now(),
           status: 'active'
         })
-        setIsAddingNew(false)
+        setIsModalVisible(false)
         setNewProject({ name: '' })
+        message.success('Проект добавлен')
       } catch (error) {
-        console.error('Error adding project:', error)
+        message.error('Ошибка при добавлении проекта')
       }
     }
   }
 
-  const handleAddCancel = () => {
-    setIsAddingNew(false)
-    setNewProject({ name: '' })
+  // Функции для справочников
+  const handleRefEditStart = (reference: ReferenceType) => {
+    setEditingRefId(reference.key)
+    setEditedRefName(reference.title)
   }
 
+  const handleRefEditSave = () => {
+    if (editingRefId && editedRefName.trim()) {
+      const updatedRefs = referenceTypes.map(ref => 
+        ref.key === editingRefId 
+          ? { ...ref, title: editedRefName.trim() }
+          : ref
+      )
+      setReferenceTypes(updatedRefs)
+      saveReferencesToStorage(updatedRefs)
+      setEditingRefId(null)
+      setEditedRefName('')
+      message.success('Справочник обновлен')
+    }
+  }
 
+  const handleRefEditCancel = () => {
+    setEditingRefId(null)
+    setEditedRefName('')
+  }
+
+  const handleAddReference = () => {
+    if (newReference.title.trim()) {
+      const key = newReference.title.trim()
+        .toLowerCase()
+        .replace(/\s+/g, '_')
+        .replace(/[^\w]/g, '')
+        .substring(0, 20) || 'ref_' + Date.now()
+
+      const newRef: ReferenceType = {
+        key,
+        title: newReference.title.trim(),
+        description: newReference.description.trim() || 'Пользовательский справочник'
+      }
+
+      const updatedRefs = [...referenceTypes, newRef]
+      setReferenceTypes(updatedRefs)
+      saveReferencesToStorage(updatedRefs)
+      setIsRefModalVisible(false)
+      setNewReference({ title: '', description: '' })
+      message.success('Справочник добавлен')
+    }
+  }
+
+  const handleDeleteReference = (referenceKey: string, referenceTitle: string) => {
+    modal.confirm({
+      title: 'Удалить справочник?',
+      content: `Вы уверены, что хотите удалить справочник "${referenceTitle}"? Это действие нельзя отменить.`,
+      okText: 'Удалить',
+      okType: 'danger',
+      cancelText: 'Отмена',
+      onOk() {
+        const updatedRefs = referenceTypes.filter(ref => ref.key !== referenceKey)
+        setReferenceTypes(updatedRefs)
+        saveReferencesToStorage(updatedRefs)
+        
+        // Сохраняем список удаленных справочников
+        const deletedRefs = JSON.parse(localStorage.getItem('deletedReferences') || '[]')
+        deletedRefs.push(referenceKey)
+        localStorage.setItem('deletedReferences', JSON.stringify(deletedRefs))
+        
+        message.success('Справочник удален')
+      }
+    })
+  }
+
+  const menuItems: MenuProps['items'] = [
+    {
+      key: '1',
+      icon: <HomeOutlined />,
+      label: <Link to="/">Главная</Link>,
+    },
+    {
+      key: 'sub1',
+      icon: <FolderOutlined />,
+      label: 'Проекты',
+      children: projectsLoading ? [
+        {
+          key: 'loading',
+          label: 'Загрузка...',
+          disabled: true
+        }
+      ] : [
+        ...projects.map((project) => ({
+          key: `project-${project.id}`,
+          label: editingId === project.id ? (
+            <div className="flex items-center space-x-2">
+              <Input
+                size="small"
+                value={editedName}
+                onChange={(e) => setEditedName(e.target.value)}
+                onPressEnter={handleEditSave}
+                autoFocus
+              />
+              <Button
+                type="link"
+                size="small"
+                icon={<SaveOutlined />}
+                onClick={handleEditSave}
+              />
+              <Button
+                type="link"
+                size="small"
+                icon={<CloseOutlined />}
+                onClick={handleEditCancel}
+              />
+            </div>
+          ) : (
+            <div className="flex items-center justify-between group">
+              <Link to={`/projects/${project.id}`}>{project.name}</Link>
+              <Button
+                type="link"
+                size="small"
+                icon={<EditOutlined />}
+                onClick={(e) => {
+                  e.preventDefault()
+                  handleEditStart(project)
+                }}
+                className="opacity-0 group-hover:opacity-100"
+              />
+            </div>
+          )
+        })),
+        {
+          key: 'add-project',
+          label: (
+            <Button
+              type="dashed"
+              size="small"
+              icon={<PlusOutlined />}
+              onClick={() => setIsModalVisible(true)}
+              block
+            >
+              Добавить проект
+            </Button>
+          )
+        }
+      ]
+    },
+    {
+      key: 'sub2',
+      icon: <BookOutlined />,
+      label: 'Справочники',
+      children: [
+        ...referenceTypes.map((reference) => ({
+          key: `reference-${reference.key}`,
+          label: editingRefId === reference.key ? (
+            <div className="flex items-center space-x-2">
+              <Input
+                size="small"
+                value={editedRefName}
+                onChange={(e) => setEditedRefName(e.target.value)}
+                onPressEnter={handleRefEditSave}
+                autoFocus
+              />
+              <Button
+                type="link"
+                size="small"
+                icon={<SaveOutlined />}
+                onClick={handleRefEditSave}
+              />
+              <Button
+                type="link"
+                size="small"
+                icon={<CloseOutlined />}
+                onClick={handleRefEditCancel}
+              />
+            </div>
+          ) : (
+            <div className="flex items-center justify-between group">
+              <Link to={`/references/${reference.key}`}>{reference.title}</Link>
+              <div className="flex gap-1 opacity-0 group-hover:opacity-100">
+                <Button
+                  type="link"
+                  size="small"
+                  icon={<EditOutlined />}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    handleRefEditStart(reference)
+                  }}
+                />
+                <Button
+                  type="link"
+                  size="small"
+                  icon={<DeleteOutlined />}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    handleDeleteReference(reference.key, reference.title)
+                  }}
+                  className="text-red-600"
+                />
+              </div>
+            </div>
+          )
+        })),
+        {
+          key: 'add-reference',
+          label: (
+            <Button
+              type="dashed"
+              size="small"
+              icon={<PlusOutlined />}
+              onClick={() => setIsRefModalVisible(true)}
+              block
+            >
+              Добавить справочник
+            </Button>
+          )
+        }
+      ]
+    }
+  ]
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      <aside className="w-72 bg-white shadow-lg border-r border-gray-200">
-        <div className="p-8 border-b border-gray-100 bg-gradient-to-r from-slate-600 to-slate-700">
-          <h1 className="text-2xl font-bold text-white">
-            X-Work Portal
-          </h1>
-          <p className="text-sm text-slate-200 mt-1">Система управления проектами</p>
+    <AntLayout style={{ minHeight: '100vh' }}>
+      <Sider 
+        collapsible 
+        collapsed={collapsed} 
+        onCollapse={setCollapsed}
+        theme="light"
+        width={280}
+      >
+        <div style={{ 
+          padding: '16px', 
+          textAlign: 'center',
+          borderBottom: '1px solid #f0f0f0',
+          background: '#fafafa'
+        }}>
+          <h2 style={{ margin: 0, color: '#1890ff', fontWeight: 600 }}>
+            {collapsed ? 'X-Work' : 'X-Work Portal'}
+          </h2>
+          {!collapsed && (
+            <p style={{ margin: 0, color: '#666', fontSize: '12px' }}>
+              Управление проектами
+            </p>
+          )}
         </div>
-        
-        <nav className="px-6 pb-8 pt-4">
-          <ul className="space-y-3">
-            <li>
-              <div className="space-y-1">
-                <button
-                  onClick={() => setIsProjectsOpen(!isProjectsOpen)}
-                  className="flex items-center w-full px-4 py-3 text-gray-700 hover:bg-slate-50 rounded-xl transition-all duration-200 group shadow-sm hover:shadow-md"
-                >
-                  <div className="p-2 bg-slate-500 rounded-lg mr-3 group-hover:bg-slate-600 transition-colors">
-                    <FolderOpen className="w-4 h-4 text-white" />
-                  </div>
-                  <span className="font-semibold">Проекты</span>
-                  <div className="ml-auto">
-                    {isProjectsOpen ? (
-                      <ChevronDown className="w-4 h-4 text-gray-500" />
-                    ) : (
-                      <ChevronRight className="w-4 h-4 text-gray-500" />
-                    )}
-                  </div>
-                </button>
-                {isProjectsOpen && (
-                  <div className="pl-4 space-y-2 mt-3">
-                    {projectsLoading ? (
-                      <div className="px-4 py-3 text-sm text-gray-500 bg-gray-50 rounded-xl">
-                        <div className="flex items-center space-x-2">
-                          <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                          <span>Загрузка...</span>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        {projects.map((project) => (
-                          <div key={project.id} className="flex items-center group bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200">
-                            {editingId === project.id ? (
-                              <div className="flex-1 flex items-center space-x-2 p-3">
-                                <input
-                                  type="text"
-                                  value={editedName}
-                                  onChange={(e) => setEditedName(e.target.value)}
-                                  className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent bg-white shadow-sm"
-                                  autoFocus
-                                />
-                                <button
-                                  onClick={handleEditSave}
-                                  className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                                >
-                                  <Check className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={handleEditCancel}
-                                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                >
-                                  <X className="w-4 h-4" />
-                                </button>
-                              </div>
-                            ) : (
-                              <>
-                                <Link
-                                  to={`/projects/${project.id}`}
-                                  className="flex-1 px-4 py-3 text-sm text-gray-700 hover:text-slate-700 font-medium transition-colors"
-                                >
-                                  <div className="flex items-center space-x-2">
-                                    <div className="w-2 h-2 bg-slate-500 rounded-full"></div>
-                                    <span>{project.name}</span>
-                                  </div>
-                                </Link>
-                                <button
-                                  onClick={() => handleEditStart(project)}
-                                  className="opacity-0 group-hover:opacity-100 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200 mr-2"
-                                >
-                                  <Edit2 className="w-3 h-3" />
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        ))}
-                        
-                        {isAddingNew ? (
-                          <div className="bg-white rounded-xl p-4 shadow-lg border border-gray-200 space-y-3">
-                            <input
-                              type="text"
-                              placeholder="Название проекта"
-                              value={newProject.name}
-                              onChange={(e) => setNewProject({ name: e.target.value })}
-                              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 bg-white shadow-sm"
-                              autoFocus
-                            />
-                            <div className="flex space-x-2">
-                              <button
-                                onClick={handleAddNew}
-                                disabled={!newProject.name.trim()}
-                                className="flex-1 px-3 py-2 text-sm bg-slate-600 text-white rounded-lg hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
-                              >
-                                Добавить
-                              </button>
-                              <button
-                                onClick={handleAddCancel}
-                                className="flex-1 px-3 py-2 text-sm bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors font-medium"
-                              >
-                                Отмена
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => setIsAddingNew(true)}
-                            className="w-full px-4 py-3 text-sm text-slate-600 hover:text-slate-700 bg-slate-50 hover:bg-slate-100 rounded-xl transition-colors flex items-center justify-center group shadow-sm border border-slate-200"
-                          >
-                            <div className="p-1 bg-slate-500 rounded-lg mr-2 group-hover:bg-slate-600 transition-colors">
-                              <Plus className="w-3 h-3 text-white" />
-                            </div>
-                            <span className="font-medium">Добавить проект</span>
-                          </button>
-                        )}
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-            </li>
-          </ul>
-        </nav>
-      </aside>
+        <Menu
+          mode="inline"
+          defaultSelectedKeys={['1']}
+          defaultOpenKeys={['sub1', 'sub2']}
+          items={menuItems}
+          style={{ borderRight: 0 }}
+        />
+      </Sider>
       
-      <main className="flex-1 overflow-hidden bg-gray-50">
-        <div className="h-full overflow-y-auto">
+      <AntLayout>
+        <Header style={{ 
+          background: '#fff', 
+          padding: '0 24px',
+          borderBottom: '1px solid #f0f0f0',
+          display: 'flex',
+          alignItems: 'center'
+        }}>
+          <h1 style={{ margin: 0, color: '#262626' }}>
+            Система управления строительными проектами
+          </h1>
+        </Header>
+        <Content style={{ margin: '24px 16px', padding: 24, background: '#fff' }}>
           {children}
+        </Content>
+      </AntLayout>
+
+      <Modal
+        title="Добавить новый проект"
+        open={isModalVisible}
+        onOk={handleAddNew}
+        onCancel={() => {
+          setIsModalVisible(false)
+          setNewProject({ name: '' })
+        }}
+        okText="Добавить"
+        cancelText="Отмена"
+      >
+        <Input
+          placeholder="Название проекта"
+          value={newProject.name}
+          onChange={(e) => setNewProject({ name: e.target.value })}
+          onPressEnter={handleAddNew}
+        />
+      </Modal>
+
+      <Modal
+        title="Добавить новый справочник"
+        open={isRefModalVisible}
+        onOk={handleAddReference}
+        onCancel={() => {
+          setIsRefModalVisible(false)
+          setNewReference({ title: '', description: '' })
+        }}
+        okText="Добавить"
+        cancelText="Отмена"
+      >
+        <div className="space-y-4">
+          <Input
+            placeholder="Название справочника"
+            value={newReference.title}
+            onChange={(e) => setNewReference({ ...newReference, title: e.target.value })}
+          />
+          <Input.TextArea
+            placeholder="Описание справочника (необязательно)"
+            value={newReference.description}
+            onChange={(e) => setNewReference({ ...newReference, description: e.target.value })}
+            rows={3}
+          />
         </div>
-      </main>
-    </div>
+      </Modal>
+    </AntLayout>
   )
 }
