@@ -28,11 +28,11 @@ npx tsc --noEmit     # Type checking only (standalone)
 ## Architecture Overview
 
 ### Tech Stack
-- **Frontend**: React 19, TypeScript 5 (strict mode), Vite 7.1
-- **UI Framework**: Tailwind CSS 4.1+ with component-based design
+- **Frontend**: React 19, TypeScript 5.8 (strict mode), Vite 7.1
+- **UI Framework**: Tailwind CSS 4.1+ with component-based design + Ant Design 5.27+ for complex components
 - **Backend**: Supabase 2.57+ (PostgreSQL, Auth, Storage, Edge Functions, Realtime WebSocket)
 - **Authentication**: Supabase Auth
-- **Icons**: Lucide React for consistent iconography
+- **Icons**: Lucide React + Ant Design Icons
 - **Routing**: React Router DOM 7.8
 - **Development**: ESLint, dotenv for environment management
 - **Editor**: WebStorm
@@ -40,23 +40,26 @@ npx tsc --noEmit     # Type checking only (standalone)
 ### Project Structure
 ```
 src/
-├── components/     # Reusable React components
-├── pages/         # Route pages and main views
-├── hooks/         # Custom React hooks
+├── components/     # Reusable React components (Layout.tsx, AdditionalWorksTable.tsx)
+├── pages/         # Route pages and main views (Projects, ProjectDetail, AdditionalWorks, References, Dashboard)
+├── hooks/         # Custom React hooks (useAuth, useAdditionalWorks, useUnits)
+├── contexts/      # React Context providers (ProjectsContext)
 ├── lib/           # External library configurations (supabase.ts)
-├── types/         # TypeScript type definitions
+├── types/         # TypeScript type definitions (index.ts with main domain types)
 ├── utils/         # Utility functions and helpers
 └── assets/        # Static assets (images, icons, etc.)
 ```
 
 ### Key Patterns
 - **Imports**: Use relative imports for project files
-- **State**: React Context for auth state (see `hooks/useAuth.ts`)
-- **Error Handling**: All Supabase queries must include error handling
+- **State**: React Context for auth state (see `hooks/useAuth.ts`) and projects (ProjectsContext)
+- **Error Handling**: All Supabase queries must include error handling with Russian error messages
+- **Domain Types**: Core business entities defined in `types/index.ts` (Project, AdditionalWork, Unit, User, etc.)
+- **Dynamic Tables**: Custom table schemas per project (additional_works_columns/rows pattern)
 
 ## Database Integration
 
-**CRITICAL**: Always reference database schema for current structure.
+**CRITICAL**: Always reference database schema in `database.sql` for current structure.
 
 ### Supabase Configuration
 Environment variables required in `.env.local`:
@@ -68,12 +71,18 @@ VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 Configuration: `src/lib/supabase.ts`
 
 ### Database Rules
-- All tables MUST include `created_at` and `updated_at` fields
+- All tables MUST include `created_at` and `updated_at` fields with automatic triggers
   - **EXCEPTION**: Mapping/junction tables (many-to-many relationships) should NOT have `created_at` and `updated_at` fields
 - **Primary keys**: All tables should use UUID for primary keys (id field)
 - **Mapping table naming**: All mapping/junction tables MUST have `_mapping` suffix
 - **NEVER use RLS (Row Level Security)** - handle auth in application layer
 - Use optimistic locking via `updated_at` timestamp for concurrent edits
+- **Dynamic schemas**: Projects can have custom table structures (additional_works_columns pattern)
+- **AUTO-SAVE**: All user input data MUST be automatically saved to database without explicit save buttons
+  - Implement debounced auto-save (300-500ms delay) for text inputs
+  - Save immediately on dropdown/select changes
+  - Use optimistic updates with error rollback on failure
+  - Show subtle loading indicators during save operations
 
 ### API Pattern
 Standard Supabase query pattern:
@@ -85,6 +94,7 @@ const { data, error } = await supabase
 
 if (error) {
   console.error('Operation failed:', error);
+  setError('Ошибка при выполнении операции'); // Russian error messages
   throw error;
 }
 ```
@@ -121,14 +131,14 @@ if (error) {
 - Component names: `PascalCase`
 - Variables and functions: `camelCase`
 - Use functional React components with hooks
-- Data fetching via TanStack Query
+- Data fetching directly via Supabase client (no TanStack Query currently)
 - Auth state via React Context
 - Follow existing patterns in codebase
 
 ## TypeScript Configuration
 - Composite project with separate `tsconfig.app.json` and `tsconfig.node.json`
 - Strict mode enabled with all strict checks
-- Path aliases configured in both `tsconfig.app.json` and `vite.config.ts`
+- No path aliases currently configured
 - Module resolution: bundler mode with ESNext modules
 
 ## Performance Requirements
@@ -154,7 +164,7 @@ if (error) {
 
 ### State Management
 - Use React Context sparingly for truly global state (auth is implemented)
-- Prefer local state for component-specific data  
+- Prefer local state for component-specific data
 - Implement proper error handling and loading states
 
 ## Important Notes
@@ -164,3 +174,9 @@ if (error) {
 - Use semantic HTML elements
 - Maintain consistent styling with Tailwind CSS
 - Test components across different screen sizes
+
+# important-instruction-reminders
+Do what has been asked; nothing more, nothing less.
+NEVER create files unless they're absolutely necessary for achieving your goal.
+ALWAYS prefer editing an existing file to creating a new one.
+NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
