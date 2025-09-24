@@ -39,16 +39,8 @@ export default function Layout({ children }: LayoutProps) {
   // Принудительное обновление справочников при монтировании
   useEffect(() => {
     const defaultReferences = [
-      { key: 'units', title: 'Единицы измерения', description: 'Справочник единиц измерения для материалов и работ' },
-      { key: 'materials', title: 'Материалы', description: 'Справочник строительных материалов' },
-      { key: 'workers', title: 'Сотрудники', description: 'Справочник сотрудников и исполнителей' },
-      { key: 'categories', title: 'Категории работ', description: 'Справочник категорий строительных работ' },
-      { key: 'suppliers', title: 'Поставщики', description: 'Справочник поставщиков материалов и услуг' },
       { key: 'tags', title: 'Тэг', description: 'Справочник тэгов рабочей документации' },
       { key: 'calculation_types', title: 'Тип расчета', description: 'Справочник типов расчетов для проектной документации' },
-      { key: 'documents', title: 'Документы', description: 'Справочник документов проекта' },
-      { key: 'statuses', title: 'Статус', description: 'Справочник статусов выполнения работ' },
-      { key: 'stages', title: 'Этапы', description: 'Справочник этапов проекта' },
       { key: 'initiators', title: 'Инициатор', description: 'Справочник инициаторов задач и проектов' }
     ]
     
@@ -103,16 +95,8 @@ export default function Layout({ children }: LayoutProps) {
   // Загружаем справочники из localStorage
   const [referenceTypes, setReferenceTypes] = useState<ReferenceType[]>(() => {
     const defaultReferences = [
-      { key: 'units', title: 'Единицы измерения', description: 'Справочник единиц измерения для материалов и работ' },
-      { key: 'materials', title: 'Материалы', description: 'Справочник строительных материалов' },
-      { key: 'workers', title: 'Сотрудники', description: 'Справочник сотрудников и исполнителей' },
-      { key: 'categories', title: 'Категории работ', description: 'Справочник категорий строительных работ' },
-      { key: 'suppliers', title: 'Поставщики', description: 'Справочник поставщиков материалов и услуг' },
       { key: 'tags', title: 'Тэг', description: 'Справочник тэгов рабочей документации' },
       { key: 'calculation_types', title: 'Тип расчета', description: 'Справочник типов расчетов для проектной документации' },
-      { key: 'documents', title: 'Документы', description: 'Справочник документов проекта' },
-      { key: 'statuses', title: 'Статус', description: 'Справочник статусов выполнения работ' },
-      { key: 'stages', title: 'Этапы', description: 'Справочник этапов проекта' },
       { key: 'initiators', title: 'Инициатор', description: 'Справочник инициаторов задач и проектов' }
     ]
 

@@ -32,9 +32,11 @@ const InitiatorTable: React.FC = () => {
     } else {
       // Начальные данные
       const initialInitiators = [
-        { key: '1', id: 1, name: 'Инициатор 1' },
-        { key: '2', id: 2, name: 'Инициатор 2' },
-        { key: '3', id: 3, name: 'Инициатор 3' }
+        { key: '1', id: 1, name: 'Рук.строй' },
+        { key: '2', id: 2, name: 'экономист' },
+        { key: '3', id: 3, name: 'тех.рук.' },
+        { key: '4', id: 4, name: 'нач. участка' },
+        { key: '5', id: 5, name: 'отдел РД' }
       ]
       setInitiators(initialInitiators)
       saveInitiators(initialInitiators)
@@ -90,7 +92,7 @@ const InitiatorTable: React.FC = () => {
     const newInitiator: InitiatorItem = {
       key: newId.toString(),
       id: newId,
-      name: `Инициатор ${newId}`
+      name: `Новый инициатор ${newId}`
     }
     const updatedInitiators = [...initiators, newInitiator]
     setInitiators(updatedInitiators)

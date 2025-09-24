@@ -154,6 +154,12 @@ const EditableTable: React.FC<EditableTableProps> = ({ className }) => {
     if (title.includes('инициатор')) {
       return 'initiator'
     }
+    if (title.includes('ориентировочная сумма') || title.includes('сумма доп') || title.includes('сумма дополнительных')) {
+      return 'sum_range'
+    }
+    if (title.includes('статус')) {
+      return 'status'
+    }
     return 'text'
   }
 
@@ -162,6 +168,21 @@ const EditableTable: React.FC<EditableTableProps> = ({ className }) => {
     { value: 'На перед', label: 'На перед' },
     { value: 'текущая', label: 'текущая' },
     { value: 'срочная', label: 'срочная' }
+  ]
+
+  // Варианты для столбца "Ориентировочная сумма доп. работ"
+  const sumRangeOptions = [
+    { value: 'до 5 млн. руб.', label: 'до 5 млн. руб.' },
+    { value: 'от 5 до 50 млн. руб.', label: 'от 5 до 50 млн. руб.' },
+    { value: 'свыше 50 млн. руб.', label: 'свыше 50 млн. руб.' }
+  ]
+
+  // Варианты для столбца "Статус"
+  const statusOptions = [
+    { value: 'Не приступали', label: 'Не приступали' },
+    { value: 'в работе', label: 'в работе' },
+    { value: 'направлено объекту/заказчику', label: 'направлено объекту/заказчику' },
+    { value: 'перенос', label: 'перенос' }
   ]
 
   // Функция для загрузки тэгов из localStorage
@@ -393,6 +414,52 @@ const EditableTable: React.FC<EditableTableProps> = ({ className }) => {
                 filterOption={(input, option) =>
                   (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
                 }
+              />
+            </div>
+          )
+        }
+
+        // Если это столбец "Ориентировочная сумма доп. работ", показываем Select с диапазонами сумм
+        if (columnType === 'sum_range') {
+          return (
+            <div className="flex items-center gap-1">
+              <Select
+                value={cellEditValue || undefined}
+                onChange={(value) => setCellEditValue(value || '')}
+                onBlur={saveCellEdit}
+                size={scale < 80 ? 'small' : 'middle'}
+                style={{
+                  width: '100%',
+                  fontSize: Math.max(10, Math.round(14 * (scale / 100))),
+                  minHeight: Math.max(24, Math.round(32 * (scale / 100)))
+                }}
+                options={sumRangeOptions}
+                placeholder="Выберите диапазон суммы"
+                allowClear
+                autoFocus
+              />
+            </div>
+          )
+        }
+
+        // Если это столбец "Статус", показываем Select со статусами
+        if (columnType === 'status') {
+          return (
+            <div className="flex items-center gap-1">
+              <Select
+                value={cellEditValue || undefined}
+                onChange={(value) => setCellEditValue(value || '')}
+                onBlur={saveCellEdit}
+                size={scale < 80 ? 'small' : 'middle'}
+                style={{
+                  width: '100%',
+                  fontSize: Math.max(10, Math.round(14 * (scale / 100))),
+                  minHeight: Math.max(24, Math.round(32 * (scale / 100)))
+                }}
+                options={statusOptions}
+                placeholder="Выберите статус"
+                allowClear
+                autoFocus
               />
             </div>
           )
