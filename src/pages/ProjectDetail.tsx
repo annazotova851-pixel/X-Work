@@ -1,9 +1,27 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Edit2, Save, X, Plus, Trash2 } from 'lucide-react'
+import {
+  Card,
+  Table,
+  Button,
+  Input,
+  Space,
+  Typography,
+  Breadcrumb,
+  message,
+  Form,
+  Modal
+} from 'antd'
+import {
+  ArrowLeftOutlined,
+  PlusOutlined
+} from '@ant-design/icons'
 import { useProjects } from '../contexts/ProjectsContext'
 import { supabase } from '../lib/supabase'
 import type { Project } from '../types'
+import AdditionalWorksTable from '../components/AdditionalWorksTable'
+
+const { Title } = Typography
 
 interface ProjectParameter {
   id: string
@@ -18,9 +36,10 @@ export default function ProjectDetail() {
   const [project, setProject] = useState<Project | null>(null)
   const [projectData, setProjectData] = useState<ProjectParameter[]>([])
   const [loading, setLoading] = useState(true)
-  const [editingIndex, setEditingIndex] = useState<number | null>(null)
-  const [editingData, setEditingData] = useState({ parameter: '', value: '' })
-  const [isAddingNew, setIsAddingNew] = useState(false)
+  const [editingCell, setEditingCell] = useState<{ id: string; field: string } | null>(null)
+  const [editValue, setEditValue] = useState('')
+  const [isModalVisible, setIsModalVisible] = useState(false)
+  const [form] = Form.useForm()
 
   useEffect(() => {
     if (id && projects.length > 0) {
@@ -40,257 +59,224 @@ export default function ProjectDetail() {
         .select('*')
         .eq('project_id', projectId)
         .order('sort_order')
-      
+
       if (error) throw error
       setProjectData(data || [])
     } catch (error) {
       console.error('Error loading project parameters:', error)
+      message.error('Ошибка загрузки параметров проекта')
     } finally {
       setLoading(false)
     }
   }
 
-  const handleEdit = (index: number) => {
-    setEditingIndex(index)
-    setEditingData({ ...projectData[index] })
+  const startCellEdit = (id: string, field: string, currentValue: string) => {
+    setEditingCell({ id, field })
+    setEditValue(currentValue)
   }
 
-  const handleSave = async (index: number) => {
-    if (!project) return
-    
+  const saveCellEdit = async () => {
+    if (!editingCell) return
+
     try {
-      const parameterToUpdate = projectData[index]
       const { error } = await supabase
         .from('project_parameters')
-        .update({
-          parameter: editingData.parameter,
-          value: editingData.value
-        })
-        .eq('id', parameterToUpdate.id)
-      
+        .update({ [editingCell.field]: editValue })
+        .eq('id', editingCell.id)
+
       if (error) throw error
-      
-      const newData = [...projectData]
-      newData[index] = { ...parameterToUpdate, ...editingData }
+
+      const newData = projectData.map(item =>
+        item.id === editingCell.id
+          ? { ...item, [editingCell.field]: editValue }
+          : item
+      )
       setProjectData(newData)
-      setEditingIndex(null)
-      setEditingData({ parameter: '', value: '' })
+      setEditingCell(null)
+      setEditValue('')
+      message.success('Параметр обновлен')
     } catch (error) {
       console.error('Error updating parameter:', error)
+      message.error('Ошибка при обновлении параметра')
     }
   }
 
-  const handleCancel = () => {
-    setEditingIndex(null)
-    setEditingData({ parameter: '', value: '' })
-  }
+  const handleAdd = async (values: { parameter: string; value: string }) => {
+    if (!project) return
 
-  const handleAddNew = async () => {
-    if (!project || !editingData.parameter.trim() || !editingData.value.trim()) return
-    
     try {
       const maxSortOrder = Math.max(...projectData.map(p => p.sort_order), 0)
       const { data, error } = await supabase
         .from('project_parameters')
         .insert({
           project_id: project.id,
-          parameter: editingData.parameter.trim(),
-          value: editingData.value.trim(),
+          parameter: values.parameter,
+          value: values.value,
           sort_order: maxSortOrder + 1
         })
         .select()
         .single()
-      
+
       if (error) throw error
-      
+
       setProjectData([...projectData, data])
-      setEditingData({ parameter: '', value: '' })
-      setIsAddingNew(false)
+      setIsModalVisible(false)
+      form.resetFields()
+      message.success('Параметр добавлен')
     } catch (error) {
       console.error('Error adding parameter:', error)
+      message.error('Ошибка при добавлении параметра')
     }
   }
 
-  const handleDelete = async (index: number) => {
-    const parameterToDelete = projectData[index]
-    
-    try {
-      const { error } = await supabase
-        .from('project_parameters')
-        .delete()
-        .eq('id', parameterToDelete.id)
-      
-      if (error) throw error
-      
-      const newData = projectData.filter((_, i) => i !== index)
-      setProjectData(newData)
-    } catch (error) {
-      console.error('Error deleting parameter:', error)
+  const columns = [
+    {
+      title: 'Параметр',
+      dataIndex: 'parameter',
+      key: 'parameter',
+      render: (text: string, record: ProjectParameter) => {
+        const isEditing = editingCell?.id === record.id && editingCell?.field === 'parameter'
+
+        if (isEditing) {
+          return (
+            <Input
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              onPressEnter={saveCellEdit}
+              onBlur={saveCellEdit}
+              autoFocus
+            />
+          )
+        }
+
+        return (
+          <div
+            className="cursor-pointer hover:bg-gray-50 p-2 rounded"
+            onClick={() => startCellEdit(record.id, 'parameter', text)}
+          >
+            {text}
+          </div>
+        )
+      }
+    },
+    {
+      title: 'Значение',
+      dataIndex: 'value',
+      key: 'value',
+      render: (text: string, record: ProjectParameter) => {
+        const isEditing = editingCell?.id === record.id && editingCell?.field === 'value'
+
+        if (isEditing) {
+          return (
+            <Input
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              onPressEnter={saveCellEdit}
+              onBlur={saveCellEdit}
+              autoFocus
+            />
+          )
+        }
+
+        return (
+          <div
+            className="cursor-pointer hover:bg-gray-50 p-2 rounded"
+            onClick={() => startCellEdit(record.id, 'value', text)}
+          >
+            {text}
+          </div>
+        )
+      }
     }
-  }
+  ]
 
   if (!project) {
     return (
-      <div className="p-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-lg text-gray-600">Проект не найден</div>
+      <Card>
+        <div style={{ textAlign: 'center', padding: '40px 0' }}>
+          <Title level={4} type="secondary">Проект не найден</Title>
         </div>
-      </div>
+      </Card>
     )
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <div className="mb-6">
-        <Link
-          to="/"
-          className="inline-flex items-center text-slate-600 hover:text-blue-700 font-medium mb-4"
+    <div>
+      <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        <Breadcrumb items={[
+          { title: <Link to="/"><ArrowLeftOutlined /> Главная</Link> },
+          { title: project.name }
+        ]} />
+
+        <div>
+          <Title level={2} style={{ margin: 0 }}>{project.name}</Title>
+        </div>
+
+        <Card
+          title="Параметры проекта"
+          extra={
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setIsModalVisible(true)}
+            >
+              Добавить параметр
+            </Button>
+          }
         >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Назад к проектам
-        </Link>
-        <h1 className="text-3xl font-bold text-gray-800">{project.name}</h1>
-      </div>
+          <Table
+            dataSource={projectData}
+            columns={columns}
+            rowKey="id"
+            loading={loading}
+            pagination={false}
+            locale={{ emptyText: 'Нет параметров' }}
+          />
+        </Card>
 
+        <AdditionalWorksTable projectId={project.id} />
+      </Space>
 
-      {/* Сводная информация */}
-      <div className="bg-white rounded-2xl shadow-lg border border-blue-100">
-        <div className="p-6 border-b border-blue-100">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-gray-800">Сводная информация</h2>
-            {!isAddingNew && (
-              <button
-                onClick={() => setIsAddingNew(true)}
-                className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Добавить параметр
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div className="p-6">
-          {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-              <span className="ml-2 text-gray-600">Загрузка параметров...</span>
-            </div>
-          ) : (
-            <div className="space-y-1">
-              {/* Заголовки столбцов */}
-              <div className="grid grid-cols-12 gap-4 p-3 bg-gray-50 rounded-lg font-semibold text-gray-700">
-                <div className="col-span-5">Параметр</div>
-                <div className="col-span-5">Значение</div>
-                <div className="col-span-2 text-center">Действия</div>
-              </div>
-
-              {/* Строки данных */}
-              {projectData.map((item, index) => (
-              <div key={index} className="grid grid-cols-12 gap-4 p-3 hover:bg-gray-50 rounded-lg border border-gray-100 group">
-                {editingIndex === index ? (
-                  <>
-                    <div className="col-span-5">
-                      <input
-                        type="text"
-                        value={editingData.parameter}
-                        onChange={(e) => setEditingData({ ...editingData, parameter: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
-                        autoFocus
-                      />
-                    </div>
-                    <div className="col-span-5">
-                      <input
-                        type="text"
-                        value={editingData.value}
-                        onChange={(e) => setEditingData({ ...editingData, value: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
-                      />
-                    </div>
-                    <div className="col-span-2 flex items-center justify-center space-x-1">
-                      <button
-                        onClick={() => handleSave(index)}
-                        className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                      >
-                        <Save className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={handleCancel}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="col-span-5 py-2 font-medium text-gray-700">{item.parameter}</div>
-                    <div className="col-span-5 py-2 text-gray-600">{item.value}</div>
-                    <div className="col-span-2 flex items-center justify-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => handleEdit(index)}
-                        className="p-2 text-slate-600 hover:bg-slate-50 rounded-lg transition-colors"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(index)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-              ))}
-
-              {/* Форма добавления нового параметра */}
-              {isAddingNew && (
-                <div className="grid grid-cols-12 gap-4 p-3 bg-blue-50 rounded-lg border-2 border-gray-200">
-                  <div className="col-span-5">
-                    <input
-                      type="text"
-                      placeholder="Название параметра"
-                      value={editingData.parameter}
-                      onChange={(e) => setEditingData({ ...editingData, parameter: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
-                      autoFocus
-                    />
-                  </div>
-                  <div className="col-span-5">
-                    <input
-                      type="text"
-                      placeholder="Значение параметра"
-                      value={editingData.value}
-                      onChange={(e) => setEditingData({ ...editingData, value: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
-                    />
-                  </div>
-                  <div className="col-span-2 flex items-center justify-center space-x-1">
-                    <button
-                      onClick={handleAddNew}
-                      disabled={!editingData.parameter.trim() || !editingData.value.trim()}
-                      className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50"
-                    >
-                      <Save className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => {
-                        setIsAddingNew(false)
-                        setEditingData({ parameter: '', value: '' })
-                      }}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
+      <Modal
+        title="Добавить параметр"
+        open={isModalVisible}
+        onCancel={() => {
+          setIsModalVisible(false)
+          form.resetFields()
+        }}
+        footer={null}
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleAdd}
+        >
+          <Form.Item
+            label="Параметр"
+            name="parameter"
+            rules={[{ required: true, message: 'Введите название параметра' }]}
+          >
+            <Input placeholder="Название параметра" />
+          </Form.Item>
+          <Form.Item
+            label="Значение"
+            name="value"
+            rules={[{ required: true, message: 'Введите значение' }]}
+          >
+            <Input placeholder="Значение параметра" />
+          </Form.Item>
+          <Form.Item style={{ textAlign: 'right', margin: 0 }}>
+            <Space>
+              <Button onClick={() => setIsModalVisible(false)}>
+                Отмена
+              </Button>
+              <Button type="primary" htmlType="submit">
+                Добавить
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   )
 }

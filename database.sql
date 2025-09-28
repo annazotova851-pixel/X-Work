@@ -53,6 +53,25 @@ INSERT INTO projects (name, code, description, photo_url) VALUES
 ('Промышленный склад', 'ПС-001-004', 'Логистический центр для крупных грузов', 'https://images.unsplash.com/photo-1566228015668-4c45dbc4e2f5?w=800&h=600&fit=crop'),
 ('ЖК "Injoy"', 'ЖК-INJ-005', 'Премиальный жилой комплекс класса комфорт+', 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&h=600&fit=crop');
 
+-- Таблица параметров проектов
+CREATE TABLE project_parameters (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    parameter VARCHAR(255) NOT NULL,
+    value TEXT,
+    sort_order INTEGER DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Индексы для производительности
+CREATE INDEX idx_project_parameters_project_id ON project_parameters(project_id);
+CREATE INDEX idx_project_parameters_sort_order ON project_parameters(project_id, sort_order);
+
+-- Триггер для автоматического обновления updated_at
+CREATE TRIGGER update_project_parameters_updated_at
+    BEFORE UPDATE ON project_parameters
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Таблица для редактируемой таблицы с 21 столбцом
 -- Хранит заголовки столбцов
